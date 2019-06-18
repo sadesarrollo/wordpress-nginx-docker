@@ -4,6 +4,8 @@ services:
   wordpress:
     image: wordpress:${WORDPRESS_VERSION:-php7.3-fpm}
     container_name: wordpress
+    expose:
+      - "3000"
     volumes:
       - ${WORDPRESS_DATA_DIR:-./wordpress}:/var/www/html
       - ${PHP_CONF_DIR:-./conf/php}/conf.d/php.ini:/etc/php/7.3/fpm/php.ini
@@ -11,35 +13,35 @@ services:
     environment:
       - WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME:-wordpress}
       - WORDPRESS_TABLE_PREFIX=${WORDPRESS_TABLE_PREFIX:-wp_}
-      - WORDPRESS_DB_HOST=${WORDPRESS_DB_HOST:-mysql_domain_name}
+      - WORDPRESS_DB_HOST=${WORDPRESS_DB_HOST:-mysql_domain_name}:3306
       - WORDPRESS_DB_USER=${WORDPRESS_DB_USER:-root}
       - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD:-password}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
-      - VIRTUAL_PORT=${VIRTUAL_PORT}
       - LETSENCRYPT_HOST=${VIRTUAL_HOST}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL} 
     depends_on:
       - mysql_domain_name
     restart: always
-    networks:
-      - nginx-proxy
 
   mysql_domain_name:
     image: mysql:${MYSQL_VERSION:-latest}
     container_name: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "8081:3306"
+    expose:
+      - "3306"
     volumes:
       - ${MYSQL_DATA_DIR:-./mysql}:/var/lib/mysql
-      - ${MYSQL_CONF_DIR:-./conf/mysql/mysql.conf.d}/mysqld.cnf}:/etc/mysql/mysql.conf.d/mysqld.cnf
+      - ${MYSQL_CONF_DIR:-./conf/mysql/mysql.conf.d}/mysqld.cnf:/etc/mysql/mysql.conf.d/mysqld.cnf
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-password}
       - MYSQL_USER=${MYSQL_USER:-root}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:-password}
       - MYSQL_DATABASE=${MYSQL_DATABASE:-wordpress}
     restart: always
-    networks:
-      - nginx-proxy
 
 networks:
-  nginx-proxy:
+  default:
     external:
-      name: nginx-proxy_nginx-proxy
+      name: webproxy
